@@ -1,0 +1,19 @@
+# Environment & Secrets
+.env
+*.env
+!.env.example
+
+# VPN Keys, Certificates & Runtime Data
+wg-easy-data/
+openvpn-data/
+adguard/
+*.pem
+*.key
+*.crt
+*.ovpn
+*.conf
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.vscode/
