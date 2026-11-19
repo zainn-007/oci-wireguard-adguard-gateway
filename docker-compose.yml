@@ -1,0 +1,66 @@
+services:
+  wireguard:
+    image: ghcr.io/wg-easy/wg-easy:14
+    container_name: wg-easy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    environment:
+      - LANG=en
+      - WG_HOST=${OCI_PUBLIC_IP}
+      - PASSWORD_HASH=${WG_PASSWORD_HASH}
+      - WG_PORT=51820
+      - WG_DEFAULT_ADDRESS=10.8.0.x
+      - WG_DEFAULT_DNS=10.8.0.1
+      - WG_ALLOWED_IPS=0.0.0.0/0, ::/0
+      - UI_TRAFFIC_STATS=true
+    ports:
+      - "51820:51820/udp"
+      - "127.0.0.1:51821:51821/tcp"
+    volumes:
+      - ./wg-easy-data:/etc/wireguard
+    networks:
+      gateway-net:
+        ipv4_address: 172.28.0.10
+
+  adguardhome:
+    image: adguard/adguardhome:v0.107.55
+    container_name: adguardhome
+    restart: unless-stopped
+    depends_on:
+      - wireguard
+    ports:
+      - "127.0.0.1:53:53/tcp"
+      - "127.0.0.1:53:53/udp"
+      - "127.0.0.1:3000:3000/tcp"
+    volumes:
+      - ./adguard/work:/opt/adguardhome/work
+      - ./adguard/conf:/opt/adguardhome/conf
+    networks:
+      gateway-net:
+        ipv4_address: 172.28.0.20
+
+  openvpn:
+    image: kylemanna/openvpn:2.4
+    container_name: openvpn-gateway
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - ./openvpn-data:/etc/openvpn
+    networks:
+      gateway-net:
+        ipv4_address: 172.28.0.30
+
+networks:
+  gateway-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
